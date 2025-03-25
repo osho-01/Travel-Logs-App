@@ -3,23 +3,22 @@
 let userConfig = {}
 
 try {
-  userConfig = require('./v0-user-next.config')
+  userConfig = await import('./v0-user-next.config.mjs')
 } catch (e) {
   console.log("⚠️  No custom user config found. Using default settings.")
 }
 
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // ✅ Ignore ESLint errors
+    ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // ✅ Ignore TypeScript errors
+    ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true, // ✅ Prevents image optimization errors
+    unoptimized: true,
   },
   publicRuntimeConfig: {
-    // ✅ Ensures the deployment is public
     isPublic: true,
   },
   experimental: {
@@ -29,7 +28,7 @@ const nextConfig = {
   },
 }
 
-const mergedConfig = mergeConfig(nextConfig, userConfig)
+export default mergeConfig(nextConfig, userConfig)
 
 function mergeConfig(defaultConfig, userConfig) {
   if (!userConfig) {
@@ -41,5 +40,3 @@ function mergeConfig(defaultConfig, userConfig) {
     ...userConfig,
   }
 }
-
-module.exports = mergedConfig
