@@ -2,11 +2,13 @@
 
 let userConfig = {}
 
-try {
-  userConfig = await import('./v0-user-next.config.mjs')
-} catch (e) {
-  console.log("⚠️  No custom user config found. Using default settings.")
-}
+import('./v0-user-next.config.mjs')
+  .then((config) => {
+    userConfig = config.default || config
+  })
+  .catch(() => {
+    console.log("⚠️  No custom user config found. Using default settings.")
+  })
 
 const nextConfig = {
   eslint: {
