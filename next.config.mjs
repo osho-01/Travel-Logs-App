@@ -16,7 +16,11 @@ const nextConfig = {
     ignoreBuildErrors: true, // ✅ Ignore TypeScript errors
   },
   images: {
-    unoptimized: true, // ✅ Prevents Image Optimization Errors
+    unoptimized: true, // ✅ Prevents image optimization errors
+  },
+  publicRuntimeConfig: {
+    // ✅ Ensures the deployment is public
+    isPublic: true,
   },
   experimental: {
     webpackBuildWorker: true,
