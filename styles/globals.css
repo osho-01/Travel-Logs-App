@@ -92,11 +92,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-/* Ensure the Dialog is above everything */
-.dialog-overlay {
-  z-index: 9999 !important;
-}
-
-.dialog-content {
-  z-index: 10000 !important;
-}

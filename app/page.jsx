@@ -1,5 +1,3 @@
-"use client" 
-
 import { Navbar } from "@/components/navbar"
 import { TravelLogProvider } from "@/components/travel-log-provider"
 import { TravelDashboard } from "@/components/travel-dashboard"

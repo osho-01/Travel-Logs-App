@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,6 +19,20 @@ import { cn, formatDate } from "@/lib/utils"
 import { CalendarIcon, MapPin, Upload, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
+import dynamic from "next/dynamic"
+
+// Dynamically import the location picker to avoid SSR issues
+const LocationPicker = dynamic(() => import("@/components/location-picker"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] w-full flex items-center justify-center bg-muted/20 rounded-md">
+      <div className="animate-pulse flex flex-col items-center">
+        <MapPin className="h-6 w-6 text-muted-foreground mb-2" />
+        <p className="text-sm text-muted-foreground">Loading map...</p>
+      </div>
+    </div>
+  ),
+})
 
 export function EditEntryModal({ isOpen, onClose, onSubmit, entry }) {
   const [formData, setFormData] = useState({
@@ -36,9 +50,15 @@ export function EditEntryModal({ isOpen, onClose, onSubmit, entry }) {
   })
   const [previewImages, setPreviewImages] = useState([])
   const [isMapOpen, setIsMapOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    if (entry) {
+    setIsMounted(true)
+  }, [])
+
+  // Load entry data when the entry prop changes
+  useEffect(() => {
+    if (entry && isOpen) {
       setFormData({
         ...entry,
         startDate: new Date(entry.startDate),
@@ -56,50 +76,53 @@ export function EditEntryModal({ isOpen, onClose, onSubmit, entry }) {
       }))
       setPreviewImages(previews)
     }
-  }, [entry])
+  }, [entry, isOpen])
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  }, [])
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files)
-    if (files.length === 0) return
+  const handleImageUpload = useCallback(
+    (e) => {
+      const files = Array.from(e.target.files)
+      if (files.length === 0) return
 
-    const newImages = []
-    const newPreviewImages = [...previewImages]
+      const newImages = []
+      const newPreviewImages = [...previewImages]
 
-    files.forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        newImages.push(event.target.result)
-        newPreviewImages.push({
-          url: event.target.result,
-          name: file.name,
-        })
+      files.forEach((file) => {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          newImages.push(event.target.result)
+          newPreviewImages.push({
+            url: event.target.result,
+            name: file.name,
+          })
 
-        if (newImages.length === files.length) {
-          setFormData((prev) => ({
-            ...prev,
-            images: [...prev.images, ...newImages],
-          }))
-          setPreviewImages(newPreviewImages)
+          if (newImages.length === files.length) {
+            setFormData((prev) => ({
+              ...prev,
+              images: [...prev.images, ...newImages],
+            }))
+            setPreviewImages(newPreviewImages)
+          }
         }
-      }
-      reader.readAsDataURL(file)
-    })
-  }
+        reader.readAsDataURL(file)
+      })
+    },
+    [previewImages],
+  )
 
-  const removeImage = (index) => {
+  const removeImage = useCallback((index) => {
     setPreviewImages((prev) => prev.filter((_, i) => i !== index))
     setFormData((prev) => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }))
-  }
+  }, [])
 
-  const handleDateRangeChange = (range) => {
+  const handleDateRangeChange = useCallback((range) => {
     setDateRange(range)
     if (range?.from) {
       setFormData((prev) => ({ ...prev, startDate: range.from }))
@@ -107,30 +130,27 @@ export function EditEntryModal({ isOpen, onClose, onSubmit, entry }) {
     if (range?.to) {
       setFormData((prev) => ({ ...prev, endDate: range.to }))
     }
-  }
+  }, [])
 
-  const handleMapClick = (e) => {
-    // Get coordinates from map click
-    const mapContainer = e.currentTarget
-    const rect = mapContainer.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-
-    // Convert x,y to lat,lng (simplified)
-    const lng = (x / mapContainer.clientWidth) * 360 - 180
-    const lat = 90 - (y / mapContainer.clientHeight) * 180
-
+  const handleLocationSelect = useCallback((coordinates) => {
     setFormData((prev) => ({
       ...prev,
-      coordinates: { lat, lng },
+      coordinates,
     }))
-  }
+  }, [])
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    onSubmit(formData)
-    onClose()
-  }
+  const handleSubmit = useCallback(
+    (e) => {
+      e.preventDefault()
+      onSubmit(formData)
+      onClose()
+    },
+    [formData, onSubmit, onClose],
+  )
+
+  const toggleMap = useCallback(() => {
+    setIsMapOpen((prev) => !prev)
+  }, [])
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -246,58 +266,24 @@ export function EditEntryModal({ isOpen, onClose, onSubmit, entry }) {
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
                 <Label>Location</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsMapOpen(!isMapOpen)}
-                  className="text-xs"
-                >
-                  {/* {isMapOpen ? "Hide Map" : "Show Maps"} */}
+                <Button type="button" variant="ghost" size="sm" onClick={toggleMap} className="text-xs">
+                  {isMapOpen ? "Hide Map" : "Show Map"}
                 </Button>
               </div>
 
               <AnimatePresence>
-                {isMapOpen && (
+                {isMapOpen && isMounted && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <div
-                      className="border rounded-md h-[200px] relative bg-muted cursor-crosshair"
-                      onClick={handleMapClick}
-                    >
-                      {/* Simplified world map */}
-                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        <span className="text-sm">Click on the map to set location</span>
-                      </div>
-
-                      {/* Marker for selected location */}
-                      {formData.coordinates.lat !== 0 && formData.coordinates.lng !== 0 && (
-                        <div
-                          className="absolute w-4 h-4 transform -translate-x-2 -translate-y-2"
-                          style={{
-                            left: `${((formData.coordinates.lng + 180) / 360) * 100}%`,
-                            top: `${((90 - formData.coordinates.lat) / 180) * 100}%`,
-                          }}
-                        >
-                          <MapPin className="h-4 w-4 text-primary" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1 flex justify-between">
+                    <LocationPicker initialCoordinates={formData.coordinates} onSelect={handleLocationSelect} />
+                    <div className="text-xs text-muted-foreground mt-2">
                       <span>
                         Coordinates: {formData.coordinates.lat.toFixed(2)}, {formData.coordinates.lng.toFixed(2)}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => setFormData((prev) => ({ ...prev, coordinates: { lat: 0, lng: 0 } }))}
-                        className="text-xs underline"
-                      >
-                        Reset
-                      </button>
                     </div>
                   </motion.div>
                 )}

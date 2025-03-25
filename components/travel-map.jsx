@@ -1,128 +1,135 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useTravelLog } from "@/components/travel-log-provider"
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from "react-leaflet"
-import "leaflet/dist/leaflet.css"
 import { Card } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import { formatDate } from "@/lib/utils"
+import { MapPin } from "lucide-react"
+import dynamic from "next/dynamic"
 
-// Import Leaflet for custom icons
-import L from "leaflet"
-
-// Custom Marker Icon
-const customIcon = new L.Icon({
-  iconUrl: "/custom-marker.png", // Replace with an actual marker image
-  iconSize: [40, 40], // Bigger marker for better visibility
-  iconAnchor: [20, 40], // Center of the marker
-  popupAnchor: [0, -40], // Popup appears above the marker
+// Dynamically import the map component to avoid SSR issues
+const MapComponent = dynamic(() => import("@/components/map-component"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[500px] w-full flex items-center justify-center bg-muted/20 rounded-md">
+      <div className="animate-pulse flex flex-col items-center">
+        <MapPin className="h-8 w-8 text-muted-foreground mb-2" />
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    </div>
+  ),
 })
 
 export function TravelMap() {
   const { entries } = useTravelLog()
   const [selectedEntry, setSelectedEntry] = useState(null)
+  const [isMounted, setIsMounted] = useState(false)
 
-  if (entries.length === 0) {
+  // Only run client-side
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Memoize the select entry handler to prevent infinite loops
+  const handleSelectEntry = useCallback((entry) => {
+    setSelectedEntry(entry)
+  }, [])
+
+  if (!isMounted) {
     return (
-      <div style={{ textAlign: "center", padding: "3rem" }}>
-        <div style={{ background: "#f3f4f6", padding: "1rem", borderRadius: "50%", display: "inline-block" }}>
-          <svg style={{ height: "2rem", width: "2rem", color: "#9ca3af" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-            />
-          </svg>
+      <div className="h-[500px] w-full flex items-center justify-center bg-muted/20 rounded-md">
+        <div className="animate-pulse flex flex-col items-center">
+          <MapPin className="h-8 w-8 text-muted-foreground mb-2" />
+          <p className="text-muted-foreground">Loading map...</p>
         </div>
-        <h3 style={{ fontSize: "1.25rem", fontWeight: "600", marginTop: "1rem" }}>No travel entries yet</h3>
-        <p style={{ color: "#6b7280", maxWidth: "30rem", margin: "auto" }}>Add your first travel destination to see it on the map.</p>
       </div>
     )
   }
 
+  if (entries.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="bg-muted rounded-full p-4 mb-4">
+          <MapPin className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">No travel entries yet</h3>
+        <p className="text-muted-foreground max-w-md">Add your first travel destination to see it on the map.</p>
+      </div>
+    )
+  }
+
+  // Filter entries with valid coordinates
+  const validEntries = entries.filter(
+    (entry) => entry.coordinates && (entry.coordinates.lat !== 0 || entry.coordinates.lng !== 0),
+  )
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "relative", paddingBottom: "2rem" }}>
-      <Card style={{ overflow: "hidden", position: "relative" }}>
-        <MapContainer
-          center={[20, 0]} // Default center
-          zoom={2}
-          scrollWheelZoom={true}
-          style={{ height: "500px", width: "100%", borderRadius: "0.5rem", zIndex: 0 }}
-        >
-          {/* OpenStreetMap Tiles (No API key needed) */}
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <Card className="overflow-hidden relative">
+        <div className="h-[500px] w-full relative">
+          <MapComponent entries={validEntries} onSelectEntry={handleSelectEntry} />
 
-          {/* Add Markers for Each Travel Entry */}
-          {entries.map((entry) => (
-            <Marker
-              key={entry.id}
-              position={[entry.coordinates.lat, entry.coordinates.lng]}
-              icon={customIcon}
-              eventHandlers={{
-                click: () => setSelectedEntry(entry),
-              }}
-            >
-              <Popup autoPan={true} style={{ zIndex: 1000 }}>
-                <div style={{ fontWeight: "bold", fontSize: "1rem" }}>{entry.destination}</div>
-                <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-                  {formatDate(entry.startDate)} - {formatDate(entry.endDate)}
-                </p>
-                {entry.notes && <p style={{ fontSize: "0.875rem", marginTop: "0.5rem" }}>{entry.notes}</p>}
-              </Popup>
-            </Marker>
-          ))}
-
-          {/* Add Circle Markers for Better Visibility */}
-          {entries.map((entry) => (
-            <CircleMarker
-              key={`circle-${entry.id}`}
-              center={[entry.coordinates.lat, entry.coordinates.lng]}
-              radius={10} // Adjust size
-              color="#ff0000" // Red border
-              fillColor="#ff4d4d" // Light red fill
-              fillOpacity={0.9}
-              style={{ zIndex: 999 }}
-            />
-          ))}
-        </MapContainer>
+          {/* Selected entry popup */}
+          {selectedEntry && (
+            <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-72 bg-card p-4 rounded-lg shadow-lg border z-10">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold">{selectedEntry.destination}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(selectedEntry.startDate)} - {formatDate(selectedEntry.endDate)}
+                  </p>
+                </div>
+                <button onClick={() => setSelectedEntry(null)} className="text-muted-foreground hover:text-foreground">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {selectedEntry.notes && <p className="mt-2 text-sm line-clamp-2">{selectedEntry.notes}</p>}
+            </div>
+          )}
+        </div>
       </Card>
 
-      {/* Floating Details Panel for Selected Entry */}
-      {selectedEntry && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            position: "absolute",
-            bottom: "1rem",
-            left: "1rem",
-            right: "1rem",
-            backgroundColor: "white",
-            padding: "1rem",
-            borderRadius: "0.5rem",
-            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.2)",
-            border: "1px solid #e5e7eb",
-            zIndex: 50,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-            <div>
-              <h3 style={{ fontWeight: "bold" }}>{selectedEntry.destination}</h3>
-              <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-                {formatDate(selectedEntry.startDate)} - {formatDate(selectedEntry.endDate)}
-              </p>
-            </div>
-            <button onClick={() => setSelectedEntry(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-              <svg style={{ height: "1rem", width: "1rem", color: "#6b7280" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+      <div className="text-sm text-muted-foreground text-center">
+        {validEntries.length > 0 ? (
+          <p>
+            Showing {validEntries.length} location{validEntries.length !== 1 ? "s" : ""} on the map
+          </p>
+        ) : (
+          <p>Add locations to your travel entries to see them on the map</p>
+        )}
+      </div>
+
+      {/* List of locations as a fallback */}
+      {validEntries.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-3">Your Travel Locations</h3>
+          <div className="grid gap-2">
+            {validEntries.map((entry) => (
+              <Card
+                key={entry.id}
+                className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                onClick={() => handleSelectEntry(entry)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <MapPin className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium">{entry.destination}</h4>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(entry.startDate)} - {formatDate(entry.endDate)}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
-          {selectedEntry.notes && <p style={{ fontSize: "0.875rem", marginTop: "0.5rem" }}>{selectedEntry.notes}</p>}
-        </motion.div>
+        </div>
       )}
     </motion.div>
   )
 }
+
