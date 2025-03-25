@@ -247,7 +247,7 @@ export function AddEntryModal({ isOpen, onClose, onSubmit }) {
                   onClick={() => setIsMapOpen(!isMapOpen)}
                   className="text-xs"
                 >
-                  {isMapOpen ? "Hide Map" : "Show Map"}
+                  {/* {isMapOpen ? "Hide Map" : "Show Map"} */}
                 </Button>
               </div>
 

@@ -31,7 +31,7 @@ export default function ClientMap({ entries }) {
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      {entries.map((entry) => (
+      {entries?.map((entry) => (
         <Marker key={entry.id} position={[entry.coordinates.lat, entry.coordinates.lng]} icon={customIcon}>
           <Popup autoPan={true} style={{ zIndex: 1000 }}>
             <div style={{ fontWeight: "bold", fontSize: "1rem" }}>{entry.destination}</div>
@@ -44,7 +44,7 @@ export default function ClientMap({ entries }) {
       ))}
 
       {/* Circle Markers for Better Visibility */}
-      {entries.map((entry) => (
+      {entries?.map((entry) => (
         <CircleMarker
           key={`circle-${entry.id}`}
           center={[entry.coordinates.lat, entry.coordinates.lng]}

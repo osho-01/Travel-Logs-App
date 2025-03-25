@@ -1,20 +1,22 @@
-let userConfig = undefined
+/** @type {import('next').NextConfig} */
+
+let userConfig = {}
+
 try {
-  userConfig = await import('./v0-user-next.config')
+  userConfig = require('./v0-user-next.config')
 } catch (e) {
-  // ignore error
+  console.log("⚠️  No custom user config found. Using default settings.")
 }
 
-/** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // ✅ Ignore ESLint errors
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true, // ✅ Ignore TypeScript errors
   },
   images: {
-    unoptimized: true,
+    unoptimized: true, // ✅ Prevents Image Optimization Errors
   },
   experimental: {
     webpackBuildWorker: true,
@@ -23,26 +25,17 @@ const nextConfig = {
   },
 }
 
-mergeConfig(nextConfig, userConfig)
+const mergedConfig = mergeConfig(nextConfig, userConfig)
 
-function mergeConfig(nextConfig, userConfig) {
+function mergeConfig(defaultConfig, userConfig) {
   if (!userConfig) {
-    return
+    return defaultConfig
   }
 
-  for (const key in userConfig) {
-    if (
-      typeof nextConfig[key] === 'object' &&
-      !Array.isArray(nextConfig[key])
-    ) {
-      nextConfig[key] = {
-        ...nextConfig[key],
-        ...userConfig[key],
-      }
-    } else {
-      nextConfig[key] = userConfig[key]
-    }
+  return {
+    ...defaultConfig,
+    ...userConfig,
   }
 }
 
-export default nextConfig
+module.exports = mergedConfig
