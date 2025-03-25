@@ -187,7 +187,7 @@ export function AddEntryModal({ isOpen, onClose, onSubmit }) {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0" align="start" style={{ zIndex: 10001 }}>
                   <Calendar mode="range" selected={dateRange} onSelect={handleDateRangeChange} initialFocus />
                 </PopoverContent>
               </Popover>
