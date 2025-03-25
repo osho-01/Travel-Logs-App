@@ -1,27 +1,16 @@
 /** @type {import('next').NextConfig} */
-
-let userConfig = {}
-
-import('./v0-user-next.config.mjs')
-  .then((config) => {
-    userConfig = config.default || config
-  })
-  .catch(() => {
-    console.log("⚠️  No custom user config found. Using default settings.")
-  })
-
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // ✅ Ignore ESLint errors
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true, // ✅ Ignore TypeScript errors
   },
   images: {
-    unoptimized: true,
+    unoptimized: true, // ✅ Prevents image optimization errors
   },
   publicRuntimeConfig: {
-    isPublic: true,
+    isPublic: true, // ✅ Ensures the deployment is public
   },
   experimental: {
     webpackBuildWorker: true,
@@ -30,15 +19,5 @@ const nextConfig = {
   },
 }
 
-export default mergeConfig(nextConfig, userConfig)
-
-function mergeConfig(defaultConfig, userConfig) {
-  if (!userConfig) {
-    return defaultConfig
-  }
-
-  return {
-    ...defaultConfig,
-    ...userConfig,
-  }
-}
+// ✅ Correct ES Module syntax
+export default nextConfig
