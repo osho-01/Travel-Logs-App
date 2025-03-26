@@ -168,29 +168,35 @@ export function AddEntryModal({ isOpen, onClose, onSubmit }) {
             <div className="grid gap-2">
               <Label>Travel Dates</Label>
               <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("justify-start text-left font-normal", !dateRange.from && "text-muted-foreground")}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.from ? (
-                      dateRange.to ? (
-                        <>
-                          {formatDate(dateRange.from)} - {formatDate(dateRange.to)}
-                        </>
-                      ) : (
-                        formatDate(dateRange.from)
-                      )
-                    ) : (
-                      <span>Select date range</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start" style={{ zIndex: 10001 }}>
-                  <Calendar mode="range" selected={dateRange} onSelect={handleDateRangeChange} initialFocus />
-                </PopoverContent>
-              </Popover>
+  <PopoverTrigger asChild>
+    <Button
+      variant="outline"
+      className={cn("justify-start text-left font-normal", !dateRange.from && "text-muted-foreground")}
+    >
+      <CalendarIcon className="mr-2 h-4 w-4" />
+      {dateRange.from ? (
+        dateRange.to ? (
+          <>
+            {formatDate(dateRange.from)} - {formatDate(dateRange.to)}
+          </>
+        ) : (
+          formatDate(dateRange.from)
+        )
+      ) : (
+        <span>Select date range</span>
+      )}
+    </Button>
+  </PopoverTrigger>
+  <PopoverContent className="w-auto p-0" align="start" style={{ zIndex: 10001 }}>
+    <Calendar
+      mode="range"
+      selected={dateRange}
+      onSelect={handleDateRangeChange}
+      fromDate={new Date()}  // ⬅️ Prevents selecting past dates
+      initialFocus
+    />
+  </PopoverContent>
+</Popover>
             </div>
 
             <div className="grid gap-2">

@@ -196,7 +196,7 @@ export function EditEntryModal({ isOpen, onClose, onSubmit, entry }) {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="range" selected={dateRange} onSelect={handleDateRangeChange} initialFocus />
+                  <Calendar mode="range" selected={dateRange} onSelect={handleDateRangeChange}   fromDate={new Date()}  initialFocus />
                 </PopoverContent>
               </Popover>
             </div>
