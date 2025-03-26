@@ -9,10 +9,19 @@ import { Badge } from "@/components/ui/badge"
 import { Edit, Trash2, MapPin, Calendar } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export function TravelCard({ entry, index }) {
   const { openEditEntryModal, deleteEntry } = useTravelLog()
   const [pendingDelete, setPendingDelete] = useState(null)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
     if (pendingDelete !== null) {
@@ -26,7 +35,12 @@ export function TravelCard({ entry, index }) {
   }, [pendingDelete, deleteEntry])
 
   const handleDelete = (id) => {
-    setPendingDelete(id) // Set entry for deletion
+    setShowConfirm(true) // Open confirmation dialog
+  }
+
+  const confirmDelete = () => {
+    setPendingDelete(entry.id) // Set entry for deletion
+    setShowConfirm(false) // Close confirmation dialog
   }
 
   const handleUndo = () => {
@@ -85,7 +99,25 @@ export function TravelCard({ entry, index }) {
         </Card>
       </motion.div>
 
-      {/* Toast Notification (Top-Right) */}
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>Are you sure you want to delete this entry? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Undo Toast Notification */}
       <AnimatePresence>
         {pendingDelete === entry.id && (
           <motion.div
